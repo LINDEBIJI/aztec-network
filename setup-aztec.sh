@@ -88,6 +88,20 @@ check_docker_installed() {
   fi
 }
 
+# Function to change language
+change_language() {
+  if [ "$LANGUAGE" = "en" ]; then
+    LANGUAGE="zh"
+    echo "语言已更改为中文"
+  else
+    LANGUAGE="en"
+    echo "Language changed to English"
+  fi
+  
+  sleep 1
+  main_menu
+}
+
 # Function to install dependencies and Aztec
 install_aztec() {
   print_section "1. Updating system packages"
@@ -535,20 +549,6 @@ display_status() {
   else
     read -p "按Enter键返回主菜单..."
   fi
-  main_menu
-}
-
-# Function to change language
-change_language() {
-  if [ "$LANGUAGE" = "en" ]; then
-    LANGUAGE="zh"
-    echo "语言已更改为中文"
-  else
-    LANGUAGE="en"
-    echo "Language changed to English"
-  fi
-  
-  sleep 1
   main_menu
 }
 
