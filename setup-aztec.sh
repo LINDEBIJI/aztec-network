@@ -4,11 +4,51 @@
 # This script automates the installation of dependencies, Docker, and Aztec tools
 # and provides options to install or run an Aztec node
 
+# Default language setting
+LANGUAGE="en"
+
+# Language strings
+declare -A MSG
+
+# English messages
+MSG[en,header]="Aztec Network Setup for Ubuntu"
+MSG[en,choose_option]="Please select an option:"
+MSG[en,install_option]="Install Aztec Node (dependencies, Docker, Aztec tools, firewall)"
+MSG[en,run_option]="Run Aztec Node (start node in screen session)"
+MSG[en,status_option]="Check Status"
+MSG[en,language_option]="Change Language (Current: English)"
+MSG[en,exit_option]="Exit"
+MSG[en,enter_choice]="Enter your choice"
+MSG[en,current_status]="Current status: Aztec is"
+MSG[en,status_installed]="installed"
+MSG[en,status_not_installed]="not installed"
+MSG[en,status_running]="running"
+MSG[en,status_not_running]="not running"
+MSG[en,node_is]="node is"
+MSG[en,eth_deposit_reminder]="IMPORTANT: Please deposit Sepolia ETH (recommend at least 0.01 ETH) to your coinbase address for the node to function properly."
+
+# Chinese messages
+MSG[zh,header]="Aztec网络Ubuntu安装脚本"
+MSG[zh,choose_option]="请选择一个选项："
+MSG[zh,install_option]="安装Aztec节点（依赖项、Docker、Aztec工具、防火墙）"
+MSG[zh,run_option]="运行Aztec节点（在screen会话中启动节点）"
+MSG[zh,status_option]="检查状态"
+MSG[zh,language_option]="更改语言（当前：中文）"
+MSG[zh,exit_option]="退出"
+MSG[zh,enter_choice]="输入您的选择"
+MSG[zh,current_status]="当前状态：Aztec已"
+MSG[zh,status_installed]="安装"
+MSG[zh,status_not_installed]="未安装"
+MSG[zh,status_running]="运行中"
+MSG[zh,status_not_running]="未运行"
+MSG[zh,node_is]="节点"
+MSG[zh,eth_deposit_reminder]="重要提示：请向您的coinbase地址转入Sepolia ETH测试代币（建议0.01ETH以上），以确保节点正常运行。"
+
 # Print header
 print_header() {
   clear
   echo "================================================"
-  echo "       Aztec Network Setup for Ubuntu           "
+  echo "       ${MSG[$LANGUAGE,header]}           "
   echo "================================================"
   echo ""
 }
@@ -254,56 +294,112 @@ run_aztec_node() {
   
   # Check if Aztec is installed
   if ! check_aztec_installed; then
-    echo "Error: Aztec is not installed. Please install it first."
-    read -p "Press Enter to return to the main menu..."
+    if [ "$LANGUAGE" = "en" ]; then
+      echo "Error: Aztec is not installed. Please install it first."
+      read -p "Press Enter to return to the main menu..."
+    else
+      echo "错误：Aztec未安装。请先安装Aztec。"
+      read -p "按Enter键返回主菜单..."
+    fi
     main_menu
     return
   fi
   
   # Installing screen if not available
   if ! command -v screen &> /dev/null; then
-    echo "Installing screen..."
+    if [ "$LANGUAGE" = "en" ]; then
+      echo "Installing screen..."
+    else
+      echo "正在安装screen..."
+    fi
     sudo apt-get install screen -y
     check_error "Failed to install screen"
   fi
 
   # Get public IP address
-  echo "Detecting your public IP address..."
+  if [ "$LANGUAGE" = "en" ]; then
+    echo "Detecting your public IP address..."
+  else
+    echo "正在检测您的公共IP地址..."
+  fi
   PUBLIC_IP=$(curl -s ipv4.icanhazip.com)
   check_error "Failed to detect public IP address"
-  echo "Your public IP address is: $PUBLIC_IP"
-
-  # Collect information from user
+  
+  if [ "$LANGUAGE" = "en" ]; then
+    echo "Your public IP address is: $PUBLIC_IP"
+    echo ""
+    echo "Please provide the following information to start your Aztec node:"
+    echo "(Press Ctrl+C at any time to cancel)"
+  else
+    echo "您的公共IP地址是：$PUBLIC_IP"
+    echo ""
+    echo "请提供以下信息以启动您的Aztec节点："
+    echo "（随时按Ctrl+C取消）"
+  fi
   echo ""
-  echo "Please provide the following information to start your Aztec node:"
-  echo "(Press Ctrl+C at any time to cancel)"
-  echo ""
 
-  read -p "Enter your L1 RPC URL: " RPC_URL
+  if [ "$LANGUAGE" = "en" ]; then
+    read -p "Enter your L1 RPC URL: " RPC_URL
+  else
+    read -p "输入您的L1 RPC URL: " RPC_URL
+  fi
   check_error "Failed to read RPC URL"
 
-  read -p "Enter your L1 Consensus Host URL (Beacon URL): " BEACON_URL
+  if [ "$LANGUAGE" = "en" ]; then
+    read -p "Enter your L1 Consensus Host URL (Beacon URL): " BEACON_URL
+  else
+    read -p "输入您的L1共识主机URL（Beacon URL）: " BEACON_URL
+  fi
   check_error "Failed to read Beacon URL"
 
-  read -p "Enter your Validator Private Key (starts with 0x): " VALIDATOR_KEY
+  if [ "$LANGUAGE" = "en" ]; then
+    read -p "Enter your Validator Private Key (starts with 0x): " VALIDATOR_KEY
+  else
+    read -p "输入您的验证者私钥（以0x开头）: " VALIDATOR_KEY
+  fi
   check_error "Failed to read Validator Private Key"
 
-  read -p "Enter your Coinbase Address (starts with 0x): " COINBASE_ADDRESS
+  if [ "$LANGUAGE" = "en" ]; then
+    read -p "Enter your Coinbase Address (starts with 0x): " COINBASE_ADDRESS
+  else
+    read -p "输入您的Coinbase地址（以0x开头）: " COINBASE_ADDRESS
+  fi
   check_error "Failed to read Coinbase Address"
 
   # Confirm information
   echo ""
-  echo "Please confirm your node configuration:"
-  echo "L1 RPC URL: $RPC_URL"
-  echo "L1 Consensus Host URL: $BEACON_URL"
-  echo "Validator Private Key: ${VALIDATOR_KEY:0:6}...${VALIDATOR_KEY: -4}"
-  echo "Coinbase Address: $COINBASE_ADDRESS"
-  echo "Public IP: $PUBLIC_IP"
-  echo ""
-  read -p "Is this information correct? (y/n): " CONFIRM
+  if [ "$LANGUAGE" = "en" ]; then
+    echo "Please confirm your node configuration:"
+    echo "L1 RPC URL: $RPC_URL"
+    echo "L1 Consensus Host URL: $BEACON_URL"
+    echo "Validator Private Key: ${VALIDATOR_KEY:0:6}...${VALIDATOR_KEY: -4}"
+    echo "Coinbase Address: $COINBASE_ADDRESS"
+    echo "Public IP: $PUBLIC_IP"
+    echo ""
+    echo "${MSG[$LANGUAGE,eth_deposit_reminder]}"
+    echo ""
+    read -p "Is this information correct? (y/n): " CONFIRM
+  else
+    echo "请确认您的节点配置："
+    echo "L1 RPC URL: $RPC_URL"
+    echo "L1共识主机URL: $BEACON_URL"
+    echo "验证者私钥: ${VALIDATOR_KEY:0:6}...${VALIDATOR_KEY: -4}"
+    echo "Coinbase地址: $COINBASE_ADDRESS"
+    echo "公共IP: $PUBLIC_IP"
+    echo ""
+    echo "${MSG[$LANGUAGE,eth_deposit_reminder]}"
+    echo ""
+    read -p "这些信息正确吗？(y/n): " CONFIRM
+  fi
+  
   if [[ "$CONFIRM" != "y" && "$CONFIRM" != "Y" ]]; then
-    echo "Setup canceled. You can try again."
-    read -p "Press Enter to return to the main menu..."
+    if [ "$LANGUAGE" = "en" ]; then
+      echo "Setup canceled. You can try again."
+      read -p "Press Enter to return to the main menu..."
+    else
+      echo "设置已取消。您可以重试。"
+      read -p "按Enter键返回主菜单..."
+    fi
     main_menu
     return
   fi
@@ -326,24 +422,42 @@ EOL
   check_error "Failed to create start script"
 
   # Start the node in a screen session
-  echo "Starting Aztec node in a screen session..."
+  if [ "$LANGUAGE" = "en" ]; then
+    echo "Starting Aztec node in a screen session..."
+  else
+    echo "正在screen会话中启动Aztec节点..."
+  fi
   screen -dmS aztec bash -c "$SCRIPT_PATH"
   check_error "Failed to start screen session"
 
   echo ""
-  echo "Your Aztec node is now running in a screen session named 'aztec'"
-  echo ""
-  echo "To attach to the screen session and see the node output:"
-  echo "  screen -r aztec"
-  echo ""
-  echo "To detach from the screen session (without stopping the node):"
-  echo "  Press Ctrl+A, then D"
-  echo ""
-  echo "If you need to restart the node later, you can run:"
-  echo "  $SCRIPT_PATH"
-  echo ""
-  
-  read -p "Press Enter to return to the main menu..."
+  if [ "$LANGUAGE" = "en" ]; then
+    echo "Your Aztec node is now running in a screen session named 'aztec'"
+    echo ""
+    echo "To attach to the screen session and see the node output:"
+    echo "  screen -r aztec"
+    echo ""
+    echo "To detach from the screen session (without stopping the node):"
+    echo "  Press Ctrl+A, then D"
+    echo ""
+    echo "If you need to restart the node later, you can run:"
+    echo "  $SCRIPT_PATH"
+    echo ""
+    read -p "Press Enter to return to the main menu..."
+  else
+    echo "您的Aztec节点现在正在名为'aztec'的screen会话中运行"
+    echo ""
+    echo "要连接到screen会话并查看节点输出："
+    echo "  screen -r aztec"
+    echo ""
+    echo "要从screen会话分离（不停止节点）："
+    echo "  按Ctrl+A，然后按D"
+    echo ""
+    echo "如果您需要稍后重新启动节点，可以运行："
+    echo "  $SCRIPT_PATH"
+    echo ""
+    read -p "按Enter键返回主菜单..."
+  fi
   main_menu
 }
 
@@ -353,36 +467,88 @@ display_status() {
   
   # Check if Aztec is installed
   if check_aztec_installed; then
-    echo "✅ Aztec is installed"
-    echo "   Version: $($HOME/.aztec/bin/aztec --version 2>/dev/null || echo 'Unknown')"
+    if [ "$LANGUAGE" = "en" ]; then
+      echo "✅ Aztec is installed"
+      echo "   Version: $($HOME/.aztec/bin/aztec --version 2>/dev/null || echo 'Unknown')"
+    else
+      echo "✅ Aztec已安装"
+      echo "   版本: $($HOME/.aztec/bin/aztec --version 2>/dev/null || echo '未知')"
+    fi
   else
-    echo "❌ Aztec is not installed"
+    if [ "$LANGUAGE" = "en" ]; then
+      echo "❌ Aztec is not installed"
+    else
+      echo "❌ Aztec未安装"
+    fi
   fi
   
   # Check if Docker is installed
   if check_docker_installed; then
-    echo "✅ Docker is installed"
-    echo "   Version: $(docker --version | cut -d ' ' -f3 | tr -d ',')"
+    if [ "$LANGUAGE" = "en" ]; then
+      echo "✅ Docker is installed"
+      echo "   Version: $(docker --version | cut -d ' ' -f3 | tr -d ',')"
+    else
+      echo "✅ Docker已安装"
+      echo "   版本: $(docker --version | cut -d ' ' -f3 | tr -d ',')"
+    fi
   else
-    echo "❌ Docker is not installed"
+    if [ "$LANGUAGE" = "en" ]; then
+      echo "❌ Docker is not installed"
+    else
+      echo "❌ Docker未安装"
+    fi
   fi
   
   # Check if screen session exists
   if screen -list | grep -q aztec; then
-    echo "✅ Aztec node is running in screen session"
+    if [ "$LANGUAGE" = "en" ]; then
+      echo "✅ Aztec node is running in screen session"
+    else
+      echo "✅ Aztec节点正在screen会话中运行"
+    fi
   else
-    echo "❌ No running Aztec node detected"
+    if [ "$LANGUAGE" = "en" ]; then
+      echo "❌ No running Aztec node detected"
+    else
+      echo "❌ 未检测到运行中的Aztec节点"
+    fi
   fi
   
   # Check if start script exists
   if [ -f "$HOME/start-aztec-node.sh" ]; then
-    echo "✅ Node start script exists: $HOME/start-aztec-node.sh"
+    if [ "$LANGUAGE" = "en" ]; then
+      echo "✅ Node start script exists: $HOME/start-aztec-node.sh"
+    else
+      echo "✅ 节点启动脚本存在: $HOME/start-aztec-node.sh"
+    fi
   else
-    echo "❌ Node start script not found"
+    if [ "$LANGUAGE" = "en" ]; then
+      echo "❌ Node start script not found"
+    else
+      echo "❌ 未找到节点启动脚本"
+    fi
   fi
   
   echo ""
-  read -p "Press Enter to return to the main menu..."
+  if [ "$LANGUAGE" = "en" ]; then
+    read -p "Press Enter to return to the main menu..."
+  else
+    read -p "按Enter键返回主菜单..."
+  fi
+  main_menu
+}
+
+# Function to change language
+change_language() {
+  if [ "$LANGUAGE" = "en" ]; then
+    LANGUAGE="zh"
+    echo "语言已更改为中文"
+  else
+    LANGUAGE="en"
+    echo "Language changed to English"
+  fi
+  
+  sleep 1
   main_menu
 }
 
@@ -393,23 +559,28 @@ main_menu() {
   # Check installation status for menu display
   AZTEC_INSTALLED="not installed"
   if check_aztec_installed; then
-    AZTEC_INSTALLED="installed"
+    AZTEC_INSTALLED="${MSG[$LANGUAGE,status_installed]}"
+  else
+    AZTEC_INSTALLED="${MSG[$LANGUAGE,status_not_installed]}"
   fi
   
   NODE_RUNNING="not running"
   if screen -list | grep -q aztec; then
-    NODE_RUNNING="running"
+    NODE_RUNNING="${MSG[$LANGUAGE,status_running]}"
+  else
+    NODE_RUNNING="${MSG[$LANGUAGE,status_not_running]}"
   fi
   
-  echo "Current status: Aztec is $AZTEC_INSTALLED, node is $NODE_RUNNING"
+  echo "${MSG[$LANGUAGE,current_status]} $AZTEC_INSTALLED, ${MSG[$LANGUAGE,node_is]} $NODE_RUNNING"
   echo ""
-  echo "Please select an option:"
-  echo "1. Install Aztec Node (dependencies, Docker, Aztec tools, firewall)"
-  echo "2. Run Aztec Node (start node in screen session)"
-  echo "3. Check Status"
-  echo "4. Exit"
+  echo "${MSG[$LANGUAGE,choose_option]}"
+  echo "1. ${MSG[$LANGUAGE,install_option]}"
+  echo "2. ${MSG[$LANGUAGE,run_option]}"
+  echo "3. ${MSG[$LANGUAGE,status_option]}"
+  echo "4. ${MSG[$LANGUAGE,language_option]}"
+  echo "5. ${MSG[$LANGUAGE,exit_option]}"
   echo ""
-  read -p "Enter your choice [1-4]: " choice
+  read -p "${MSG[$LANGUAGE,enter_choice]} [1-5]: " choice
   
   case $choice in
     1)
@@ -422,6 +593,9 @@ main_menu() {
       display_status
       ;;
     4)
+      change_language
+      ;;
+    5)
       echo "Exiting..."
       exit 0
       ;;
