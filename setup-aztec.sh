@@ -121,18 +121,98 @@ EOF
   # Clean up the temporary expect script
   rm /tmp/aztec_install.exp
 
-  # Add Aztec to PATH
-  echo 'export PATH=$PATH:$HOME/.aztec/bin' >> $HOME/.bash_profile
-  echo 'export PATH=$PATH:$HOME/.aztec/bin' >> $HOME/.bashrc
-  source $HOME/.bash_profile 2>/dev/null || true
-  source $HOME/.bashrc 2>/dev/null || true
-  check_error "Failed to update PATH"
-
+  # Handle PATH update properly
+  print_section "Setting up Aztec PATH"
+  echo "Ensuring Aztec binaries are in PATH..."
+  
+  # Add to current session PATH
+  export PATH="$PATH:$HOME/.aztec/bin"
+  
+  # Add to profile files for persistence
+  grep -qxF 'export PATH="$PATH:$HOME/.aztec/bin"' $HOME/.bash_profile || echo 'export PATH="$PATH:$HOME/.aztec/bin"' >> $HOME/.bash_profile
+  grep -qxF 'export PATH="$PATH:$HOME/.aztec/bin"' $HOME/.bashrc || echo 'export PATH="$PATH:$HOME/.aztec/bin"' >> $HOME/.bashrc
+  grep -qxF 'export PATH="$PATH:$HOME/.aztec/bin"' $HOME/.profile || echo 'export PATH="$PATH:$HOME/.aztec/bin"' >> $HOME/.profile
+  
+  # Also add to root user if running as root
+  if [ "$(id -u)" -eq 0 ]; then
+    grep -qxF 'export PATH="$PATH:/root/.aztec/bin"' /root/.bash_profile || echo 'export PATH="$PATH:/root/.aztec/bin"' >> /root/.bash_profile
+    grep -qxF 'export PATH="$PATH:/root/.aztec/bin"' /root/.bashrc || echo 'export PATH="$PATH:/root/.aztec/bin"' >> /root/.bashrc
+    grep -qxF 'export PATH="$PATH:/root/.aztec/bin"' /root/.profile || echo 'export PATH="$PATH:/root/.aztec/bin"' >> /root/.profile
+  fi
+  
+  # Create Aztec directory if it doesn't exist yet
+  mkdir -p "$HOME/.aztec/bin" 2>/dev/null || true
+  
+  # Wait for Docker pull to complete
+  print_section "Waiting for Aztec installation to complete..."
+  echo "This may take several minutes depending on your internet connection..."
+  
+  # Wait loop to ensure Docker image download is complete
+  MAX_WAIT=600  # 10 minutes max wait time
+  WAIT_INTERVAL=15
+  ELAPSED=0
+  AZTEC_BIN_PATH=""
+  
+  # Determine the correct path based on user
+  if [ "$(id -u)" -eq 0 ]; then
+    AZTEC_BIN_PATH="/root/.aztec/bin/aztec"
+  else
+    AZTEC_BIN_PATH="$HOME/.aztec/bin/aztec"
+  fi
+  
+  while [ $ELAPSED -lt $MAX_WAIT ]; do
+    # Check if the aztec binary exists
+    if [ -f "$AZTEC_BIN_PATH" ]; then
+      echo "✅ Aztec binary found at $AZTEC_BIN_PATH"
+      echo "✅ Installation complete after $ELAPSED seconds"
+      break
+    fi
+    
+    echo "⏳ Waiting for installation to complete... ($ELAPSED seconds elapsed)"
+    sleep $WAIT_INTERVAL
+    ELAPSED=$((ELAPSED + WAIT_INTERVAL))
+  done
+  
+  # Final check
+  if [ ! -f "$AZTEC_BIN_PATH" ]; then
+    echo "⚠️ Warning: Aztec binary not found after waiting $MAX_WAIT seconds."
+    echo "Installation may still be in progress in the background."
+    echo "We'll continue with the rest of the setup."
+    echo ""
+    echo "You may need to manually check if the installation completed by running:"
+    echo "  ls -la $AZTEC_BIN_PATH"
+    echo ""
+    echo "Press Enter to continue anyway, or Ctrl+C to cancel."
+    read -p ""
+  fi
+  
   # 5. Update Aztec
   print_section "5. Updating Aztec"
-  export PATH=$PATH:$HOME/.aztec/bin
-  $HOME/.aztec/bin/aztec-up alpha-testnet
-  check_error "Failed to update Aztec"
+  
+  # Determine the correct up-command path
+  if [ "$(id -u)" -eq 0 ]; then
+    AZTEC_UP_PATH="/root/.aztec/bin/aztec-up"
+  else 
+    AZTEC_UP_PATH="$HOME/.aztec/bin/aztec-up"
+  fi
+  
+  # Check if aztec-up exists before running it
+  if [ -f "$AZTEC_UP_PATH" ]; then
+    echo "Running aztec-up alpha-testnet..."
+    "$AZTEC_UP_PATH" alpha-testnet
+    if [ $? -ne 0 ]; then
+      echo "⚠️ Warning: aztec-up command encountered an error."
+      echo "This might be temporary. We'll continue with the rest of the setup."
+    fi
+  else
+    echo "⚠️ Warning: aztec-up command not found at $AZTEC_UP_PATH"
+    echo "This could be because:"
+    echo "1. The installation is still in progress in the background"
+    echo "2. There was an issue with the Aztec installation"
+    echo ""
+    echo "We'll continue with the rest of the setup."
+    echo "Once installation completes, you may need to run 'aztec-up alpha-testnet' manually."
+  fi
 
   # 6. Configure Firewall
   print_section "6. Configuring Firewall"
