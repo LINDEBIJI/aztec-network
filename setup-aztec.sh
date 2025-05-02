@@ -11,7 +11,7 @@ LANGUAGE="zh"
 declare -A MSG
 
 # English messages
-MSG[en,header]="Aztec Network Setup for Ubuntu"
+MSG[en,header]="Aztec Network Setup for Ubuntu X:@LINDEBIJI"
 MSG[en,choose_option]="Please select an option:"
 MSG[en,install_option]="Install Aztec Node (dependencies, Docker, Aztec tools, firewall)"
 MSG[en,run_option]="Run Aztec Node (start node in screen session)"
@@ -25,10 +25,10 @@ MSG[en,status_not_installed]="not installed"
 MSG[en,status_running]="running"
 MSG[en,status_not_running]="not running"
 MSG[en,node_is]="node is"
-MSG[en,eth_deposit_reminder]="IMPORTANT: Please deposit Sepolia ETH (recommend at least 0.01 ETH) to your coinbase address for the node to function properly."
+MSG[en,eth_deposit_reminder]="IMPORTANT: Please deposit Sepolia ETH (recommend at least 0.01 ETH) to your address for the node to function properly."
 
 # Chinese messages
-MSG[zh,header]="Aztec网络Ubuntu安装脚本"
+MSG[zh,header]="Aztec网络Ubuntu安装脚本 推特：@LINDEBIJI 全开源无收费"
 MSG[zh,choose_option]="请选择一个选项："
 MSG[zh,install_option]="安装Aztec节点（依赖项、Docker、Aztec工具、防火墙）"
 MSG[zh,run_option]="运行Aztec节点（在screen会话中启动节点）"
@@ -42,7 +42,7 @@ MSG[zh,status_not_installed]="未安装"
 MSG[zh,status_running]="运行中"
 MSG[zh,status_not_running]="未运行"
 MSG[zh,node_is]="节点"
-MSG[zh,eth_deposit_reminder]="重要提示：请向您的coinbase地址转入Sepolia ETH测试代币（建议0.01ETH以上），以确保节点正常运行。"
+MSG[zh,eth_deposit_reminder]="重要提示：请向您的钱包地址转入Sepolia ETH测试代币（建议0.01ETH以上），以确保节点正常运行。"
 
 # Print header
 print_header() {
