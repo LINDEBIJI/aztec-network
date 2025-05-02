@@ -5,7 +5,7 @@
 # and provides options to install or run an Aztec node
 
 # Default language setting
-LANGUAGE="en"
+LANGUAGE="zh"
 
 # Language strings
 declare -A MSG
@@ -16,7 +16,7 @@ MSG[en,choose_option]="Please select an option:"
 MSG[en,install_option]="Install Aztec Node (dependencies, Docker, Aztec tools, firewall)"
 MSG[en,run_option]="Run Aztec Node (start node in screen session)"
 MSG[en,status_option]="Check Status"
-MSG[en,language_option]="Change Language (Current: English)"
+MSG[en,language_option]="更改语言 (Change to Chinese)"
 MSG[en,exit_option]="Exit"
 MSG[en,enter_choice]="Enter your choice"
 MSG[en,current_status]="Current status: Aztec is"
@@ -33,7 +33,7 @@ MSG[zh,choose_option]="请选择一个选项："
 MSG[zh,install_option]="安装Aztec节点（依赖项、Docker、Aztec工具、防火墙）"
 MSG[zh,run_option]="运行Aztec节点（在screen会话中启动节点）"
 MSG[zh,status_option]="检查状态"
-MSG[zh,language_option]="更改语言（当前：中文）"
+MSG[zh,language_option]="Change Language (Switch to English)"
 MSG[zh,exit_option]="退出"
 MSG[zh,enter_choice]="输入您的选择"
 MSG[zh,current_status]="当前状态：Aztec已"
@@ -513,12 +513,48 @@ display_status() {
     fi
   fi
   
-  # Check if screen session exists
+  # Check if screen session exists and get its status
   if screen -list | grep -q aztec; then
     if [ "$LANGUAGE" = "en" ]; then
       echo "✅ Aztec node is running in screen session"
+      echo ""
+      echo "Screen session details:"
+      screen -list | grep aztec
+      echo ""
+      echo "Last 20 lines of node output:"
+      echo "--------------------------------"
     else
       echo "✅ Aztec节点正在screen会话中运行"
+      echo ""
+      echo "Screen会话详情："
+      screen -list | grep aztec
+      echo ""
+      echo "节点输出的最后20行："
+      echo "--------------------------------"
+    fi
+    
+    # Create a temporary script to capture screen output
+    TEMP_SCRIPT="/tmp/screen_capture.sh"
+    cat > $TEMP_SCRIPT << 'EOF'
+#!/bin/bash
+screen -S aztec -X hardcopy /tmp/aztec_screen.log
+tail -n 20 /tmp/aztec_screen.log
+rm -f /tmp/aztec_screen.log
+EOF
+    chmod +x $TEMP_SCRIPT
+    
+    # Execute the script to get the latest screen output
+    $TEMP_SCRIPT
+    rm -f $TEMP_SCRIPT
+    
+    echo "--------------------------------"
+    
+    if [ "$LANGUAGE" = "en" ]; then
+      echo ""
+      echo "To see full node logs, use the command: screen -r aztec"
+    else
+      echo ""
+      echo "要查看完整的节点日志，请使用命令：screen -r aztec"
     fi
   else
     if [ "$LANGUAGE" = "en" ]; then
