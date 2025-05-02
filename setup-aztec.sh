@@ -98,10 +98,14 @@ install_aztec() {
   # Create a temporary expect script to handle the interactive prompt
   cat > /tmp/aztec_install.exp << 'EOF'
 #!/usr/bin/expect -f
+set timeout -1
 spawn bash -i -c "curl -s https://install.aztec.network | bash -i"
 expect "Do you wish to continue? (y/n)"
 send "y\r"
-expect eof
+expect "Building initial Docker image"
+expect "Aztec is ready to use"
+send_user "\nAztec installation completed successfully!\n"
+exit 0
 EOF
 
   # Make the expect script executable
@@ -114,12 +118,23 @@ EOF
       check_error "Failed to install 'expect' package"
   fi
 
-  # Run the expect script
+  # Run the expect script and wait for it to complete
+  echo "Starting Aztec installation. This may take several minutes..."
+  echo "Please be patient while Docker downloads and builds the Aztec image."
+  echo ""
   /tmp/aztec_install.exp
-  check_error "Failed to install Aztec Tools"
-
+  EXPECT_EXIT_CODE=$?
+  
   # Clean up the temporary expect script
   rm /tmp/aztec_install.exp
+
+  # Check if the installation was successful
+  if [ $EXPECT_EXIT_CODE -ne 0 ]; then
+    echo "⚠️ Warning: Aztec installation might not have completed properly."
+    echo "We'll continue with the setup, but you might need to run the installation again if needed."
+  else
+    echo "✅ Aztec installation completed successfully!"
+  fi
 
   # Handle PATH update properly
   print_section "Setting up Aztec PATH"
@@ -143,75 +158,56 @@ EOF
   # Create Aztec directory if it doesn't exist yet
   mkdir -p "$HOME/.aztec/bin" 2>/dev/null || true
   
-  # Wait for Docker pull to complete
-  print_section "Waiting for Aztec installation to complete..."
-  echo "This may take several minutes depending on your internet connection..."
-  
-  # Wait loop to ensure Docker image download is complete
-  MAX_WAIT=600  # 10 minutes max wait time
-  WAIT_INTERVAL=15
-  ELAPSED=0
-  AZTEC_BIN_PATH=""
-  
   # Determine the correct path based on user
   if [ "$(id -u)" -eq 0 ]; then
     AZTEC_BIN_PATH="/root/.aztec/bin/aztec"
+    AZTEC_UP_PATH="/root/.aztec/bin/aztec-up"
   else
     AZTEC_BIN_PATH="$HOME/.aztec/bin/aztec"
-  fi
-  
-  while [ $ELAPSED -lt $MAX_WAIT ]; do
-    # Check if the aztec binary exists
-    if [ -f "$AZTEC_BIN_PATH" ]; then
-      echo "✅ Aztec binary found at $AZTEC_BIN_PATH"
-      echo "✅ Installation complete after $ELAPSED seconds"
-      break
-    fi
-    
-    echo "⏳ Waiting for installation to complete... ($ELAPSED seconds elapsed)"
-    sleep $WAIT_INTERVAL
-    ELAPSED=$((ELAPSED + WAIT_INTERVAL))
-  done
-  
-  # Final check
-  if [ ! -f "$AZTEC_BIN_PATH" ]; then
-    echo "⚠️ Warning: Aztec binary not found after waiting $MAX_WAIT seconds."
-    echo "Installation may still be in progress in the background."
-    echo "We'll continue with the rest of the setup."
-    echo ""
-    echo "You may need to manually check if the installation completed by running:"
-    echo "  ls -la $AZTEC_BIN_PATH"
-    echo ""
-    echo "Press Enter to continue anyway, or Ctrl+C to cancel."
-    read -p ""
+    AZTEC_UP_PATH="$HOME/.aztec/bin/aztec-up"
   fi
   
   # 5. Update Aztec
   print_section "5. Updating Aztec"
   
-  # Determine the correct up-command path
-  if [ "$(id -u)" -eq 0 ]; then
-    AZTEC_UP_PATH="/root/.aztec/bin/aztec-up"
-  else 
-    AZTEC_UP_PATH="$HOME/.aztec/bin/aztec-up"
-  fi
-  
-  # Check if aztec-up exists before running it
-  if [ -f "$AZTEC_UP_PATH" ]; then
-    echo "Running aztec-up alpha-testnet..."
-    "$AZTEC_UP_PATH" alpha-testnet
-    if [ $? -ne 0 ]; then
-      echo "⚠️ Warning: aztec-up command encountered an error."
-      echo "This might be temporary. We'll continue with the rest of the setup."
+  # Check if aztec exists before running update
+  if [ -f "$AZTEC_BIN_PATH" ]; then
+    echo "Aztec binary found at $AZTEC_BIN_PATH"
+    
+    # Check if aztec-up exists
+    if [ -f "$AZTEC_UP_PATH" ]; then
+      echo "Running aztec-up alpha-testnet..."
+      "$AZTEC_UP_PATH" alpha-testnet
+      if [ $? -ne 0 ]; then
+        echo "⚠️ Warning: aztec-up command encountered an error."
+        echo "This might be temporary. We'll continue with the rest of the setup."
+      else
+        echo "✅ Aztec updated successfully to alpha-testnet!"
+      fi
+    else
+      echo "⚠️ Warning: aztec-up command not found at $AZTEC_UP_PATH"
+      echo "Trying alternative approach using the aztec command directly..."
+      
+      # Try using the aztec command directly instead
+      "$AZTEC_BIN_PATH" up alpha-testnet
+      if [ $? -ne 0 ]; then
+        echo "⚠️ Warning: Failed to update Aztec using direct command."
+        echo "We'll continue with the rest of the setup."
+        echo "You may need to run 'aztec up alpha-testnet' manually after installation."
+      else
+        echo "✅ Aztec updated successfully to alpha-testnet!"
+      fi
     fi
   else
-    echo "⚠️ Warning: aztec-up command not found at $AZTEC_UP_PATH"
+    echo "⚠️ Warning: Aztec binary not found at $AZTEC_BIN_PATH after installation."
     echo "This could be because:"
     echo "1. The installation is still in progress in the background"
     echo "2. There was an issue with the Aztec installation"
     echo ""
     echo "We'll continue with the rest of the setup."
-    echo "Once installation completes, you may need to run 'aztec-up alpha-testnet' manually."
+    echo "You may need to manually check the installation by running:"
+    echo "  ls -la $HOME/.aztec/bin/"
+    echo "Once installation completes, you may need to run 'aztec up alpha-testnet' manually."
   fi
 
   # 6. Configure Firewall
